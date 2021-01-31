@@ -184,11 +184,7 @@ def sample_around(layerdata, x, y, rad, rings=1):
 def get_heal_data2(coords, layerdata, sel_radius, contrast_thr=1.3,brightness_thr=0.08, rings=1):
     data=[]
     for j,(x,y,r) in enumerate(coords):
-        sc=samplecontrast(get_original_samples(layerdata, x, y, CONTRAST_RAD_MULTIPL*RING_SIZE_MULTIPLICATION*r))
-        
-        if sc[0]<contrast_thr and sc[1]>brightness_thr:
-            src = sample_around(layerdata, x, y, RING_SIZE_MULTIPLICATION*sel_radius*r,rings=rings)
-            data.append(((x,y,sel_radius*r),src))
+        data.append(get_heal_data((x,y,r), layerdata, sel_radius, contrast_thr,brightness_thr, rings))
     return data
     
 def get_heal_data(coord, layerdata, sel_radius, contrast_thr=1.3,brightness_thr=0.08, rings=1):
@@ -309,9 +305,11 @@ def heal_image(image, dirt, mask_path="masks.npz", sel_radius=1.1, sample_points
     results=[]
     #print(circles)
     start_t=time.time()
-    #pool=mp.Pool()
-    #results=pool.map(partial(get_heal_data2,layerdata=src_data, sel_radius=sel_radius, contrast_thr=contrast_thr,brightness_thr=brightness_thr),np.array_split(circles, mp.cpu_count()))
-    results=list(map(partial(get_heal_data,layerdata=src_data, sel_radius=sel_radius, contrast_thr=contrast_thr,brightness_thr=brightness_thr),circles.tolist())) #actually faster than pool.map
+    pool=mp.Pool()
+    result=pool.map(partial(get_heal_data2,layerdata=src_data, sel_radius=sel_radius, contrast_thr=contrast_thr,brightness_thr=brightness_thr),np.array_split(circles, mp.cpu_count()))
+    results=[]
+    for l in result: results.extend(l)
+    #results=list(map(partial(get_heal_data,layerdata=src_data, sel_radius=sel_radius, contrast_thr=contrast_thr,brightness_thr=brightness_thr),circles.tolist())) #actually faster than pool.map
     print("find heal time: ", time.time()-start_t)
     
     #Image.fromarray(src_data,"RGB").save("testout_src.jpg") 
@@ -340,5 +338,5 @@ def heal_image(image, dirt, mask_path="masks.npz", sel_radius=1.1, sample_points
     
 if __name__ == "__main__":
     print(sys.argv[1:])
-    heal_image(*sys.argv[1:],contrast_thr=2,sample_points=12)
+    heal_image(*sys.argv[1:],contrast_thr=2,sample_points=30)
 
