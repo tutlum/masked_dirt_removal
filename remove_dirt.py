@@ -22,15 +22,17 @@
 #  
 #  
 
-import numpy as np
+import sys
+print(sys.executable)
+
 import time
 # Can be used for more acurate but slower calculation of minimum enclosing circle
 #import smallestenclosingcircle as sec
 from gimpfu import *
-import sys
 import math
 import os
 import multiprocessing as mp
+import numpy as np
 from functools import partial
 
 BRUCH_HARDNESS=0.9
@@ -82,7 +84,7 @@ def approx_make_circle(data):
 
 def calc_circles(mask, ignore_px_thr=2):
     size=mask.shape
-    print size
+    print(size)
     cl_m={}
     circles=[]
     cl=0
@@ -245,14 +247,14 @@ def init(image, layer, sample_points=6, mask_path=""):
         mask=np.array(np.where(arr1<128,-1,0))
     #arr2=np.array(np.where(arr1<128,1,0))
     
-    print "load time: ", time.time()-start_t
+    print("load time: ", time.time()-start_t)
     
     
     if not read:    
         start_t=time.time()
         circles = calc_circles(mask)
         print("total {} circles".format(len(circles)))
-        print "region time: ", time.time()-start_t
+        print("region time: ", time.time()-start_t)
         mp.process
     
     return src_img, src_data, circles, read
@@ -261,11 +263,14 @@ def init(image, layer, sample_points=6, mask_path=""):
 # saving the calculated circles
 def save_circles(read, circles):
     if not read:
-        import tkFileDialog
-        f=tkFileDialog.asksaveasfile(mode='w', defaultextension=".npz")
-        if not f is None:
-            np.savez_compressed(f,circles)
-            f.close()
+        try:
+            import tkFileDialog
+            f=tkFileDialog.asksaveasfile(mode='w', defaultextension=".npz")
+            if not f is None:
+                np.savez_compressed(f,circles)
+                f.close()
+        except Exception:
+            print("No TK")
 
 
 def heal_image(image, layer, sel_radius=1.1, sample_points=6, contrast_thr=1.3,brightness_thr=0.08,mask_path=""):
@@ -283,7 +288,7 @@ def heal_image(image, layer, sel_radius=1.1, sample_points=6, contrast_thr=1.3,b
     #pool=mp.Pool()
     #results=pool.map(partial(get_heal_data2,layerdata=src_data, sel_radius=sel_radius, contrast_thr=contrast_thr,brightness_thr=brightness_thr),np.array_split(circles, mp.cpu_count()))
     results=map(partial(get_heal_data,layerdata=src_data, sel_radius=sel_radius, contrast_thr=contrast_thr,brightness_thr=brightness_thr),circles.tolist()) #actually faster than pool.map
-    print "find heal time: ", time.time()-start_t
+    print("find heal time: ", time.time()-start_t)
     
     print("Found wounds:", len([r for r in results if not r is None]))
     
@@ -292,7 +297,7 @@ def heal_image(image, layer, sel_radius=1.1, sample_points=6, contrast_thr=1.3,b
     #    execute_heal_data(src_img, r)
     
     execute_heal_data(src_img, [r for r in results if not r is None])
-    print "heal time: ", time.time()-start_t
+    print("heal time: ", time.time()-start_t)
     
     # for i,(x,y,r) in enumerate(circles):
         
